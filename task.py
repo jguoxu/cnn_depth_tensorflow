@@ -13,27 +13,51 @@ MAX_STEPS = 10000000
 LOG_DEVICE_PLACEMENT = True
 BATCH_SIZE = 8
 TRAIN_FILE = "train.csv"
+
+# directory to store coarse and refine network model.
 COARSE_DIR = "coarse"
 REFINE_DIR = "refine"
 
+# train with refine network if true, otherwise train with coarse network.
 REFINE_TRAIN = True
+
+
 FINE_TUNE = True
 
 def train():
     with tf.Graph().as_default():
         global_step = tf.Variable(0, trainable=False)
         dataset = DataSet(BATCH_SIZE)
+
+        # Get batch of tensors.
+        # images is X, depth is Y, invalid_depth is matrix of 0 and 1 
+        # that indicates which pixel in Y has depth value.
         images, depths, invalid_depths = dataset.csv_inputs(TRAIN_FILE)
+
+        # keep_conv is the drop out rate in conv layers
         keep_conv = tf.placeholder(tf.float32)
+
+        # TODO(xuguo): what's keep hidden?
         keep_hidden = tf.placeholder(tf.float32)
+
         if REFINE_TRAIN:
+            # When training with refined network, train with both coarse and 
+            # refined together.
             print("refine train.")
             coarse = model.inference(images, keep_conv, trainable=False)
             logits = model.inference_refine(images, coarse, keep_conv, keep_hidden)
         else:
+            # When training with coarse network, train with only coarse network.
             print("coarse train.")
             logits = model.inference(images, keep_conv, keep_hidden)
+
+        # define loss function:
+        # logits: the final output after FC layer.
+        # depth: the Y-hat.
+        # invalid_depth: the pixels without depth value.
         loss = model.loss(logits, depths, invalid_depths)
+
+        # define trainning function
         train_op = op.train(loss, global_step, BATCH_SIZE)
         init_op = tf.global_variables_initializer()#tf.initialize_all_variables()
 

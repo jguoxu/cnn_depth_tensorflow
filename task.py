@@ -57,8 +57,10 @@ def train():
         # invalid_depth: the pixels without depth value.
         loss = model.loss(logits, depths, invalid_depths)
 
-        # define trainning function
+        # define trainning function, adam optimization.
         train_op = op.train(loss, global_step, BATCH_SIZE)
+
+        # initialize all variable
         init_op = tf.global_variables_initializer()#tf.initialize_all_variables()
 
         # Session
@@ -66,6 +68,8 @@ def train():
         sess.run(init_op)
 
         # parameters
+        # the parameters are use to store checkpoint, so training can resume when exception
+        # happens.
         coarse_params = {}
         refine_params = {}
         if REFINE_TRAIN:
@@ -112,12 +116,19 @@ def train():
                 else:
                     print("No Pretrained refine Model.")
 
-        # train
+        # train with multi-thread.
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+
+        # step is epoch.
         for step in range(MAX_STEPS):
             index = 0
+            #TODO(xuguo): is 'i' mini batches? where is the dividing of batches?
             for i in range(1000):
+                # start trainning:
+                # loss_value - loss
+                # logits_val - Y-hat
+                # image_val - X
                 _, loss_value, logits_val, images_val = sess.run([train_op, loss, logits, images], feed_dict={keep_conv: 0.8, keep_hidden: 0.5})
                 if index % 10 == 0:
                     print("%s: %d[epoch]: %d[iteration]: train loss %f" % (datetime.now(), step, index, loss_value))
@@ -129,6 +140,7 @@ def train():
                         output_predict(logits_val, images_val, "data/predict_%05d_%05d" % (step, i))
                 index += 1
 
+            # save parameters every 5 epoch.
             if step % 5 == 0 or (step * 1) == MAX_STEPS:
                 if REFINE_TRAIN:
                     refine_checkpoint_path = REFINE_DIR + '/model.ckpt'

@@ -10,7 +10,7 @@ import model
 import train_operation as op
 import metrics
 
-RUN_EVAL_ON_TRAIN = True
+RUN_EVAL_ON_TRAIN = False
 TRAIN_FILE = "train.csv"
 EVAL_FILE = "test.csv"
 REFINE_DIR = "refine"
@@ -20,7 +20,7 @@ def eval():
     print ('evaluating %d files' % eval_size)
 
     with tf.Graph().as_default():
-        dataset = DataSet(eval_size)
+        dataset = DataSet(1)
 
         images_test, depths_test, invalid_depths_test = dataset.csv_inputs(EVAL_FILE)
         images_train, depths_train, invalid_depths_train = dataset.csv_inputs(TRAIN_FILE)
@@ -32,6 +32,8 @@ def eval():
         coarse_test = model.inference(images_test, trainable=False)
         logits_test = model.inference_refine(images_test, coarse_test, keep_conv, trainable=False)
         
+        loss = model.loss(logits_test, coarse_test, invalid_depths_test)
+
         metric_log_error_test = metrics.log_error(logits_test, depths_test, invalid_depths_test)
         scale_invariant_error_test = metrics.scale_invariant_error(logits_test, depths_test, invalid_depths_test)
         
@@ -49,16 +51,16 @@ def eval():
         sess.run(init_op)
 
         # load pre-trained parameters
-        refine_params = {}
+        model_params = {}
 
         for variable in tf.global_variables():
             variable_name = variable.name
             if variable_name.find("/") < 0 or variable_name.count("/") != 1:
                 continue
-            if variable_name.find('fine') >= 0:
-                refine_params[variable_name] = variable
+            print(variable_name)
+            model_params[variable_name] = variable
 
-        saver_refine = tf.train.Saver(refine_params)
+        saver_refine = tf.train.Saver(model_params)
 
         refine_ckpt = tf.train.get_checkpoint_state(REFINE_DIR)
         if refine_ckpt and refine_ckpt.model_checkpoint_path:
@@ -72,7 +74,7 @@ def eval():
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
-        logits_val_test, images_val_test, metric_log_error_test, scale_invariant_error_test = sess.run([logits_test, images_test, metric_log_error_test, scale_invariant_error_test], feed_dict={keep_conv: 1.0, keep_hidden: 1.0})
+        loss, logits_val_test, images_val_test, metric_log_error_test, scale_invariant_error_test = sess.run([loss, logits_test, images_test, metric_log_error_test, scale_invariant_error_test], feed_dict={keep_conv: 1.0, keep_hidden: 1.0})
         
         output_predict(logits_val_test, images_val_test, "data/predict_eval_test")
         
@@ -82,6 +84,7 @@ def eval():
 #         print("invalid_depths shape :" + str(invalid_depths_test.shape))
 
         print ("Eval metrics:")
+        print ("loss: " + str(loss))
         print ("metric_log_error: " + str(metric_log_error_test))
         print ("scale_invariant_error: " + str(scale_invariant_error_test))
         

@@ -10,15 +10,14 @@ import model
 import train_operation as op
 import metrics
 
-MAX_STEPS = 10000000
-MAX_RANGE = 1000
+MAX_STEPS = 200#10000000
+MAX_RANGE = 3#1000
 
 LOG_DEVICE_PLACEMENT = False
 BATCH_SIZE = 8
 TRAIN_FILE = "train.csv"
 
 # directory to store coarse and refine network model.
-COARSE_DIR = "coarse"
 REFINE_DIR = "refine"
 
 # train with refine network if true, otherwise train with coarse network.
@@ -73,52 +72,19 @@ def train():
         # parameters
         # the parameters are use to store checkpoint, so training can resume when exception
         # happens.
-        coarse_params = {}
-        refine_params = {}
+        model_param_dict = {}
         print('pre-trained parameters -----------------------------------')
-        if REFINE_TRAIN:
-            for variable in tf.global_variables():#tf.all_variables():
-                variable_name = variable.name
-                print("parameter: %s" % (variable_name))
-                if variable_name.find("/") < 0 or variable_name.count("/") != 1:
-                    continue
-                if variable_name.find('coarse') >= 0:
-                    coarse_params[variable_name] = variable
-                print("parameter: %s" %(variable_name))
-                if variable_name.find('fine') >= 0:
-                    refine_params[variable_name] = variable
-        else:
-            for variable in tf.trainable_variables():
-                variable_name = variable.name
-                print("parameter: %s" %(variable_name))
-                if variable_name.find("/") < 0 or variable_name.count("/") != 1:
-                    continue
-                if variable_name.find('coarse') >= 0:
-                    coarse_params[variable_name] = variable
-                if variable_name.find('fine') >= 0:
-                    refine_params[variable_name] = variable
-        # define saver
-        # print(coarse_params)
-        saver_coarse = tf.train.Saver(coarse_params)
-        if REFINE_TRAIN:
-            saver_refine = tf.train.Saver(refine_params)
-        # fine tune
-        if FINE_TUNE:
-            coarse_ckpt = tf.train.get_checkpoint_state(COARSE_DIR)
-            if coarse_ckpt and coarse_ckpt.model_checkpoint_path:
-                print("Pretrained coarse Model Loading.")
-                saver_coarse.restore(sess, coarse_ckpt.model_checkpoint_path)
-                print("Pretrained coarse Model Restored.")
-            else:
-                print("No Pretrained coarse Model.")
-            if REFINE_TRAIN:
-                refine_ckpt = tf.train.get_checkpoint_state(REFINE_DIR)
-                if refine_ckpt and refine_ckpt.model_checkpoint_path:
-                    print("Pretrained refine Model Loading.")
-                    saver_refine.restore(sess, refine_ckpt.model_checkpoint_path)
-                    print("Pretrained refine Model Restored.")
-                else:
-                    print("No Pretrained refine Model.")
+        for variable in tf.global_variables():#tf.all_variables():
+            variable_name = variable.name
+            print("store model variables: " + str(variable_name))
+            model_param_dict[variable_name] = variable
+
+        model_saver = tf.train.Saver(model_param_dict)
+
+        model_ckpt = tf.train.get_checkpoint_state(REFINE_DIR)
+        if model_ckpt and model_ckpt.model_checkpoint_path:
+            model_saver.restore(sess, model_ckpt.model_checkpoint_path)
+            print("Pretrained model restored.")
 
         # train with multi-thread.
         coord = tf.train.Coordinator()
@@ -129,32 +95,20 @@ def train():
             index = 0
 #             _, loss_value, logits_val, images_val = sess.run([train_op, loss, logits, images], feed_dict={keep_conv: 0.8, keep_hidden: 0.5})
 #             print("%s: %d[epoch]: train loss %f" % (datetime.now(), step, loss_value))
-            
-            #TODO(xuguo): is 'i' mini batches? where is the dividing of batches?
+
             for i in range(MAX_RANGE):
-#                 start trainning:
-#                 loss_value - loss
-#                 logits_val - Y-hat
-#                 image_val - X
                 _, loss_value, logits_val, images_val = sess.run([train_op, loss, logits, images], feed_dict={keep_conv: 0.8, keep_hidden: 0.5})
                 if index % 10 == 0:
                     print("%s: %d[epoch]: %d[iteration]: train loss %f" % (datetime.now(), step, index, loss_value))
                     assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
                 if index % 500 == 0:
-                    if REFINE_TRAIN:
-                        output_predict(logits_val, images_val, "data/predict_refine_%05d_%05d" % (step, i))
-                    else:
-                        output_predict(logits_val, images_val, "data/predict_%05d_%05d" % (step, i))
+                    output_predict(logits_val, images_val, "data/predict_refine_%05d_%05d" % (step, i))
                 index += 1
 
             # save parameters every 5 epoch.
             if step % 5000 == 0 or (step * 1) == MAX_STEPS:
-                if REFINE_TRAIN:
-                    refine_checkpoint_path = REFINE_DIR + '/model.ckpt'
-                    saver_refine.save(sess, refine_checkpoint_path, global_step=step)
-                else:
-                    coarse_checkpoint_path = COARSE_DIR + '/model.ckpt'
-                    saver_coarse.save(sess, coarse_checkpoint_path, global_step=step)
+                checkpoint_path = REFINE_DIR + '/model.ckpt'
+                model_saver.save(sess, checkpoint_path, global_step=step)
 
         coord.request_stop()
         coord.join(threads)
@@ -162,8 +116,6 @@ def train():
 
 
 def main(argv=None):
-    if not gfile.Exists(COARSE_DIR):
-        gfile.MakeDirs(COARSE_DIR)
     if not gfile.Exists(REFINE_DIR):
         gfile.MakeDirs(REFINE_DIR)
     train()

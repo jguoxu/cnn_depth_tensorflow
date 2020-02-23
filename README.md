@@ -13,6 +13,10 @@ https://arxiv.org/abs/1406.2283
 ```
 pip install wget
 ```
+- h5py
+```
+pip install h5py
+```
 
 # How to train
 - Download training data. Please see readme.md in data directory.

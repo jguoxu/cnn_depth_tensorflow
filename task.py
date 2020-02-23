@@ -8,6 +8,7 @@ from dataset import DataSet
 from dataset import output_predict
 import model
 import train_operation as op
+import metrics
 
 TRAIN_STEPS = 2 #mpng: small epoch for exporation
 TRAIN_RANGE = 2 #mpng: small range for exploration
@@ -161,7 +162,14 @@ def train():
                     coarse_checkpoint_path = COARSE_DIR + '/model.ckpt'
                     saver_coarse.save(sess, coarse_checkpoint_path, global_step=step)
 
-        
+        #Calculate metrics when done with training
+        print("Logits shape: ", logits_val.shape)
+        print("Depths shape: ", images_val.shape)
+        metric_log_error = metrics.log_error(logits_val, images_val, invalid_depths)
+        print("Log Error: ", metric_log_error)
+
+        metric_scale_invariant_error = metrics.scale_invariant_error(logits_val, images_val, invalid_depths)
+        print("Scale Invariant Error: ", metric_scale_invariant_error)
 
         coord.request_stop()
         coord.join(threads)

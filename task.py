@@ -46,7 +46,7 @@ def train():
             # When training with refined network, train with both coarse and 
             # refined together.
             print("refine train.")
-            coarse = model.inference(images, keep_conv, trainable=False)
+            coarse = model.inference(images, keep_conv, trainable=True)
             logits = model.inference_refine(images, coarse, keep_conv, keep_hidden)
         else:
             # When training with coarse network, train with only coarse network.
@@ -130,7 +130,7 @@ def train():
 #             _, loss_value, logits_val, images_val = sess.run([train_op, loss, logits, images], feed_dict={keep_conv: 0.8, keep_hidden: 0.5})
 #             print("%s: %d[epoch]: train loss %f" % (datetime.now(), step, loss_value))
             
-            #TODO(xuguo): is 'i' mini batches? where is the dividing of batches?
+#             TODO(xuguo): is 'i' mini batches? where is the dividing of batches?
             for i in range(MAX_RANGE):
 #                 start trainning:
 #                 loss_value - loss
@@ -148,8 +148,10 @@ def train():
                 index += 1
 
             # save parameters every 5 epoch.
-            if step % 5000 == 0 or (step * 1) == MAX_STEPS:
+            if step % 2000 == 0 or (step * 1) == MAX_STEPS:
                 if REFINE_TRAIN:
+                    coarse_checkpoint_path = COARSE_DIR + '/model.ckpt'
+                    saver_coarse.save(sess, coarse_checkpoint_path, global_step=step)
                     refine_checkpoint_path = REFINE_DIR + '/model.ckpt'
                     saver_refine.save(sess, refine_checkpoint_path, global_step=step)
                 else:

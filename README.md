@@ -8,7 +8,13 @@ https://arxiv.org/abs/1406.2283
 
 # requierments
 - TensorFlow 0.10+
+```
+pip install tensorflow==1.0.0
+```
 - Numpy
+```
+pip install numpy
+```
 - Wget
 ```
 pip install wget
@@ -16,6 +22,10 @@ pip install wget
 - h5py
 ```
 pip install h5py
+```
+- PIL
+```
+pip install Pillow
 ```
 
 # How to train

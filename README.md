@@ -9,6 +9,10 @@ https://arxiv.org/abs/1406.2283
 # requierments
 - TensorFlow 0.10+
 - Numpy
+- Wget
+```
+pip install wget
+```
 
 # How to train
 - Download training data. Please see readme.md in data directory.

@@ -20,7 +20,6 @@ def convert_nyu(path):
     if not os.path.exists(file):
         filename = wget.download(nyuurl, out="data")
         print('\n downloaded: ', filename)
-        return
 
     print("load dataset: %s" % (path))
     f = h5py.File(path, 'r')

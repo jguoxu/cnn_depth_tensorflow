@@ -127,24 +127,24 @@ def train():
         # step is epoch.
         for step in range(MAX_STEPS):
             index = 0
-            _, loss_value, logits_val, images_val = sess.run([train_op, loss, logits, images], feed_dict={keep_conv: 0.8, keep_hidden: 0.5})
-            print("%s: %d[epoch]: train loss %f" % (datetime.now(), step, loss_value))
+#             _, loss_value, logits_val, images_val = sess.run([train_op, loss, logits, images], feed_dict={keep_conv: 0.8, keep_hidden: 0.5})
+#             print("%s: %d[epoch]: train loss %f" % (datetime.now(), step, loss_value))
             
             #TODO(xuguo): is 'i' mini batches? where is the dividing of batches?
-            # for i in range(MAX_RANGE):
-                # start trainning:
-                # loss_value - loss
-                # logits_val - Y-hat
-                # image_val - X
-                # _, loss_value, logits_val, images_val = sess.run([train_op, loss, logits, images], feed_dict={keep_conv: 0.8, keep_hidden: 0.5})
-                # if index % 10 == 0:
-                #     print("%s: %d[epoch]: %d[iteration]: train loss %f" % (datetime.now(), step, index, loss_value))
-                #     assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
-                # if index % 500 == 0:
-                #     if REFINE_TRAIN:
-                #         output_predict(logits_val, images_val, "data/predict_refine_%05d_%05d" % (step, i))
-                #     else:
-                #         output_predict(logits_val, images_val, "data/predict_%05d_%05d" % (step, i))
+            for i in range(MAX_RANGE):
+#                 start trainning:
+#                 loss_value - loss
+#                 logits_val - Y-hat
+#                 image_val - X
+                _, loss_value, logits_val, images_val = sess.run([train_op, loss, logits, images], feed_dict={keep_conv: 0.8, keep_hidden: 0.5})
+                if index % 10 == 0:
+                    print("%s: %d[epoch]: %d[iteration]: train loss %f" % (datetime.now(), step, index, loss_value))
+                    assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
+                if index % 500 == 0:
+                    if REFINE_TRAIN:
+                        output_predict(logits_val, images_val, "data/predict_refine_%05d_%05d" % (step, i))
+                    else:
+                        output_predict(logits_val, images_val, "data/predict_%05d_%05d" % (step, i))
 
             # save parameters every 5 epoch.
             if step % 5000 == 0 or (step * 1) == MAX_STEPS:

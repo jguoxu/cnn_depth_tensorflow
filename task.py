@@ -10,14 +10,8 @@ import model
 import train_operation as op
 import metrics
 
-# TRAIN_STEPS = 2 #mpng: small epoch for exporation
-# TRAIN_RANGE = 2 #mpng: small range for exploration
-
-#TODO (mpng): Put max steps and range back when ready
-MAX_STEPS = 20
-# MAX_STEPS = TRAIN_STEPS
-MAX_RANGE = 1
-# MAX_RANGE = TRAIN_RANGE
+MAX_STEPS = 10000000 * 8
+# MAX_RANGE = 1
 
 LOG_DEVICE_PLACEMENT = False
 BATCH_SIZE = 8
@@ -29,7 +23,6 @@ REFINE_DIR = "refine"
 
 # train with refine network if true, otherwise train with coarse network.
 REFINE_TRAIN = True
-
 
 FINE_TUNE = True
 
@@ -154,7 +147,7 @@ def train():
                 #         output_predict(logits_val, images_val, "data/predict_%05d_%05d" % (step, i))
 
             # save parameters every 5 epoch.
-            if step % 5 == 0 or (step * 1) == MAX_STEPS:
+            if step % 5000 == 0 or (step * 1) == MAX_STEPS:
                 if REFINE_TRAIN:
                     refine_checkpoint_path = REFINE_DIR + '/model.ckpt'
                     saver_refine.save(sess, refine_checkpoint_path, global_step=step)

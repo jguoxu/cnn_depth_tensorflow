@@ -76,7 +76,7 @@ def eval():
 
         loss, logits_val_test, images_val_test, metric_log_error_test, scale_invariant_error_test = sess.run([loss, logits_test, images_test, metric_log_error_test, scale_invariant_error_test], feed_dict={keep_conv: 1.0, keep_hidden: 1.0})
         
-        output_predict(logits_val_test, images_val_test, "data/predict_eval_test")
+        # output_predict(logits_val_test, images_val_test, "data/predict_eval_test")
         
 #         print("logits shape:" + str(logits_val_test.shape))
 #         print("images_val shape:" + str(images_val_test.shape))

@@ -10,8 +10,8 @@ import model
 import train_operation as op
 import metrics
 
-MAX_STEPS = 200#10000000
-MAX_RANGE = 3#1000
+MAX_STEPS = 1000#10000000
+# MAX_RANGE = 3#1000
 
 LOG_DEVICE_PLACEMENT = False
 BATCH_SIZE = 8
@@ -92,21 +92,23 @@ def train():
 
         # step is epoch.
         for step in range(MAX_STEPS):
-            index = 0
-#             _, loss_value, logits_val, images_val = sess.run([train_op, loss, logits, images], feed_dict={keep_conv: 0.8, keep_hidden: 0.5})
-#             print("%s: %d[epoch]: train loss %f" % (datetime.now(), step, loss_value))
+            _, loss_value, logits_val, images_val = sess.run([train_op, loss, logits, images], feed_dict={keep_conv: 0.8, keep_hidden: 0.5})
+            print("%s: %d[epoch]: train loss %f" % (datetime.now(), step, loss_value))
+            # output_predict(logits_val, images_val, "data/perdict/predict_refine_%05d" % step)
 
-            for i in range(MAX_RANGE):
-                _, loss_value, logits_val, images_val = sess.run([train_op, loss, logits, images], feed_dict={keep_conv: 0.8, keep_hidden: 0.5})
-                if index % 10 == 0:
-                    print("%s: %d[epoch]: %d[iteration]: train loss %f" % (datetime.now(), step, index, loss_value))
-                    assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
-                if index % 500 == 0:
-                    output_predict(logits_val, images_val, "data/predict_refine_%05d_%05d" % (step, i))
-                index += 1
+            # index = 0
+            # for i in range(MAX_RANGE):
+            #     _, loss_value, logits_val, images_val = sess.run([train_op, loss, logits, images], feed_dict={keep_conv: 0.8, keep_hidden: 0.5})
+            #     if index % 10 == 0:
+            #         print("%s: %d[epoch]: %d[iteration]: train loss %f" % (datetime.now(), step, index, loss_value))
+            #         assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
+            #     if index % 500 == 0:
+            #         output_predict(logits_val, images_val, "data/predict_refine_%05d_%05d" % (step, i))
+            #     index += 1
 
             # save parameters every 5 epoch.
-            if step % 5000 == 0 or (step * 1) == MAX_STEPS:
+            if step % 100 == 0 or (step * 1) == MAX_STEPS:
+                print("mode saved")
                 checkpoint_path = REFINE_DIR + '/model.ckpt'
                 model_saver.save(sess, checkpoint_path, global_step=step)
 

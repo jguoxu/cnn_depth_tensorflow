@@ -40,7 +40,8 @@ class DataSet:
         )
         return images, depths, invalid_depths
 
-
+# Puts predicted depth image into /data where depths are Y_hat and images are X
+# TODO(mpng): 255? 
 def output_predict(depths, images, output_dir):
     print("output predict into %s" % output_dir)
     if not gfile.Exists(output_dir):

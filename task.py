@@ -9,7 +9,15 @@ from dataset import output_predict
 import model
 import train_operation as op
 
-MAX_STEPS = 10000000
+TRAIN_STEPS = 2 #mpng: small epoch for exporation
+TRAIN_RANGE = 2 #mpng: small range for exploration
+
+#TODO (mpng): Put max steps and range back when ready
+#MAX_STEPS = 10000000
+MAX_STEPS = TRAIN_STEPS
+#MAX_RANGE = 1000
+MAX_RANGE = TRAIN_RANGE
+
 LOG_DEVICE_PLACEMENT = True
 BATCH_SIZE = 8
 TRAIN_FILE = "train.csv"
@@ -48,6 +56,7 @@ def train():
             logits = model.inference_refine(images, coarse, keep_conv, keep_hidden)
         else:
             # When training with coarse network, train with only coarse network.
+            # (mpng) this isn't called at all
             print("coarse train.")
             logits = model.inference(images, keep_conv, keep_hidden)
 
@@ -124,7 +133,7 @@ def train():
         for step in range(MAX_STEPS):
             index = 0
             #TODO(xuguo): is 'i' mini batches? where is the dividing of batches?
-            for i in range(1000):
+            for i in range(MAX_RANGE):
                 # start trainning:
                 # loss_value - loss
                 # logits_val - Y-hat
@@ -138,6 +147,9 @@ def train():
                         output_predict(logits_val, images_val, "data/predict_refine_%05d_%05d" % (step, i))
                     else:
                         output_predict(logits_val, images_val, "data/predict_%05d_%05d" % (step, i))
+
+                #TODO (mpng): Output prediction at every step, i for testing. To remove. 
+                output_predict(logits_val, images_val, "data/playground_%05d_%05d" %(step, i))        
                 index += 1
 
             # save parameters every 5 epoch.
@@ -148,6 +160,9 @@ def train():
                 else:
                     coarse_checkpoint_path = COARSE_DIR + '/model.ckpt'
                     saver_coarse.save(sess, coarse_checkpoint_path, global_step=step)
+
+        
+
         coord.request_stop()
         coord.join(threads)
         sess.close()

@@ -10,8 +10,8 @@ import model
 import train_operation as op
 import metrics
 
-MAX_STEPS = 10000000 * 8
-# MAX_RANGE = 1
+MAX_STEPS = 10000000
+MAX_RANGE = 1000
 
 LOG_DEVICE_PLACEMENT = False
 BATCH_SIZE = 8
@@ -145,6 +145,7 @@ def train():
                         output_predict(logits_val, images_val, "data/predict_refine_%05d_%05d" % (step, i))
                     else:
                         output_predict(logits_val, images_val, "data/predict_%05d_%05d" % (step, i))
+                index += 1
 
             # save parameters every 5 epoch.
             if step % 5000 == 0 or (step * 1) == MAX_STEPS:

@@ -49,6 +49,8 @@ def convert_nyu(path):
         if i % 100 == 0:
             print ('processed %d out of %d files' % (i, file_count))
 
+    print ('processed %d out of %d files' % (file_count, file_count))
+
     random.shuffle(trains)
 
     if os.path.exists('train.csv'):

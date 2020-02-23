@@ -10,16 +10,16 @@ import model
 import train_operation as op
 import metrics
 
-TRAIN_STEPS = 2 #mpng: small epoch for exporation
-TRAIN_RANGE = 2 #mpng: small range for exploration
+# TRAIN_STEPS = 2 #mpng: small epoch for exporation
+# TRAIN_RANGE = 2 #mpng: small range for exploration
 
 #TODO (mpng): Put max steps and range back when ready
-#MAX_STEPS = 10000000
-MAX_STEPS = TRAIN_STEPS
-#MAX_RANGE = 1000
-MAX_RANGE = TRAIN_RANGE
+MAX_STEPS = 20
+# MAX_STEPS = TRAIN_STEPS
+MAX_RANGE = 1
+# MAX_RANGE = TRAIN_RANGE
 
-LOG_DEVICE_PLACEMENT = True
+LOG_DEVICE_PLACEMENT = False
 BATCH_SIZE = 8
 TRAIN_FILE = "train.csv"
 
@@ -82,6 +82,7 @@ def train():
         # happens.
         coarse_params = {}
         refine_params = {}
+        print('pre-trained parameters -----------------------------------')
         if REFINE_TRAIN:
             for variable in tf.global_variables():#tf.all_variables():
                 variable_name = variable.name
@@ -104,7 +105,7 @@ def train():
                 if variable_name.find('fine') >= 0:
                     refine_params[variable_name] = variable
         # define saver
-        print(coarse_params)
+        # print(coarse_params)
         saver_coarse = tf.train.Saver(coarse_params)
         if REFINE_TRAIN:
             saver_refine = tf.train.Saver(refine_params)
@@ -133,25 +134,24 @@ def train():
         # step is epoch.
         for step in range(MAX_STEPS):
             index = 0
+            _, loss_value, logits_val, images_val = sess.run([train_op, loss, logits, images], feed_dict={keep_conv: 0.8, keep_hidden: 0.5})
+            print("%s: %d[epoch]: train loss %f" % (datetime.now(), step, loss_value))
+            
             #TODO(xuguo): is 'i' mini batches? where is the dividing of batches?
-            for i in range(MAX_RANGE):
+            # for i in range(MAX_RANGE):
                 # start trainning:
                 # loss_value - loss
                 # logits_val - Y-hat
                 # image_val - X
-                _, loss_value, logits_val, images_val = sess.run([train_op, loss, logits, images], feed_dict={keep_conv: 0.8, keep_hidden: 0.5})
-                if index % 10 == 0:
-                    print("%s: %d[epoch]: %d[iteration]: train loss %f" % (datetime.now(), step, index, loss_value))
-                    assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
-                if index % 500 == 0:
-                    if REFINE_TRAIN:
-                        output_predict(logits_val, images_val, "data/predict_refine_%05d_%05d" % (step, i))
-                    else:
-                        output_predict(logits_val, images_val, "data/predict_%05d_%05d" % (step, i))
-
-                #TODO (mpng): Output prediction at every step, i for testing. To remove. 
-                output_predict(logits_val, images_val, "data/playground_%05d_%05d" %(step, i))        
-                index += 1
+                # _, loss_value, logits_val, images_val = sess.run([train_op, loss, logits, images], feed_dict={keep_conv: 0.8, keep_hidden: 0.5})
+                # if index % 10 == 0:
+                #     print("%s: %d[epoch]: %d[iteration]: train loss %f" % (datetime.now(), step, index, loss_value))
+                #     assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
+                # if index % 500 == 0:
+                #     if REFINE_TRAIN:
+                #         output_predict(logits_val, images_val, "data/predict_refine_%05d_%05d" % (step, i))
+                #     else:
+                #         output_predict(logits_val, images_val, "data/predict_%05d_%05d" % (step, i))
 
             # save parameters every 5 epoch.
             if step % 5 == 0 or (step * 1) == MAX_STEPS:
@@ -161,15 +161,6 @@ def train():
                 else:
                     coarse_checkpoint_path = COARSE_DIR + '/model.ckpt'
                     saver_coarse.save(sess, coarse_checkpoint_path, global_step=step)
-
-        #Calculate metrics when done with training
-        print("Logits shape: ", logits_val.shape)
-        print("Depths shape: ", images_val.shape)
-        metric_log_error = metrics.log_error(logits_val, images_val, invalid_depths)
-        print("Log Error: ", metric_log_error)
-
-        metric_scale_invariant_error = metrics.scale_invariant_error(logits_val, images_val, invalid_depths)
-        print("Scale Invariant Error: ", metric_scale_invariant_error)
 
         coord.request_stop()
         coord.join(threads)

@@ -53,6 +53,7 @@ def train(total_loss, global_step, batch_size):
 
     # add trainable varibale histogram to summary
     # trainable variales are: trainable=True, essentially the weights in model_parts.py
+    print('operation list -----------------------------------')
     for var in tf.trainable_variables():
         print(var.op.name)
         tf.summary.histogram(var.op.name, var)

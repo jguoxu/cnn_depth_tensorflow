@@ -32,6 +32,11 @@ python task.py
 
 - You can see predicting images through training in data directory.
 
+# Eval
+```
+python eval.py
+```
+
 # example
 - input  
 <img src="images/input.png" width="200">

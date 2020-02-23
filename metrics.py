@@ -12,8 +12,9 @@ def log_error(logits, depths, invalid_depths):
     square_d = tf.square(d)
     sum_square_d = tf.reduce_sum(square_d, 1)
     cost = tf.sqrt(tf.reduce_mean(sum_square_d / 55.0*74.0))
-    tf.add_to_collection('error', cost)
-    return tf.add_n(tf.get_collection('error'), name='total_error')
+    return cost
+    # tf.add_to_collection('error', cost)
+    # return tf.add_n(tf.get_collection('error'), name='total_error')
 
 def scale_invariant_error(logits, depths, invalid_depths):
     logits_flat = tf.reshape(logits, [-1, 55*74])
@@ -28,5 +29,6 @@ def scale_invariant_error(logits, depths, invalid_depths):
     sum_d = tf.reduce_sum(d, 1)
     sqare_sum_d = tf.square(sum_d)
     cost = tf.sqrt(tf.reduce_mean(sum_square_d / 55.0*74.0 - 0.5*sqare_sum_d / math.pow(55*74, 2)))
-    tf.add_to_collection('scale_invariant', cost)
-    return tf.add_n(tf.get_collection('scale_invariant'), name='total_error')
+    return cost
+    # tf.add_to_collection('scale_invariant', cost)
+    # return tf.add_n(tf.get_collection('scale_invariant'), name='total_error')

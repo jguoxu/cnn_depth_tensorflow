@@ -17,7 +17,7 @@ def _variable_on_gpu(name, shape, initializer):
     return var
 
 
-def conv2d(scope_name, inputs, shape, bias_shape, stride, padding='VALID', wd=0.0, reuse=False, trainable=True):
+def conv2d(scope_name, inputs, shape, bias_shape, stride, padding='VALID', wd=0.0, reuse=False, trainable=True, use_relu=True):
     with tf.variable_scope(scope_name) as scope:
         if reuse is True:
             scope.reuse_variables()
@@ -31,11 +31,14 @@ def conv2d(scope_name, inputs, shape, bias_shape, stride, padding='VALID', wd=0.
         conv = tf.nn.conv2d(inputs, kernel, stride, padding=padding)
         biases = _variable_on_gpu('biases', bias_shape, tf.constant_initializer(0.1))
         bias = tf.nn.bias_add(conv, biases)
-        conv_ = tf.nn.relu(bias, name=scope.name)
+        if use_relu:
+            conv_ = tf.nn.relu(bias, name=scope.name)
+        else:
+            conv_ = tf.keras.activations.linear(bias)
         return conv_
 
 
-def fc(scope_name, inputs, shape, bias_shape, wd=0.04, reuse=False, trainable=True):
+def fc(scope_name, inputs, shape, bias_shape, wd=0.04, reuse=False, trainable=True, use_relu=True):
     with tf.variable_scope(scope_name) as scope:
         if reuse is True:
             scope.reuse_variables()
@@ -48,5 +51,8 @@ def fc(scope_name, inputs, shape, bias_shape, wd=0.04, reuse=False, trainable=Tr
             trainable=trainable
         )
         biases = _variable_on_gpu('biases', bias_shape, tf.constant_initializer(0.1))
-        fc = tf.nn.relu_layer(flat, weights, biases, name=scope.name)
+        if use_relu:
+            fc = tf.nn.relu_layer(flat, weights, biases, name=scope.name)
+        else:
+            fc = tf.keras.activations.linear(tf.matmul(weights, flat) + biases)
         return fc

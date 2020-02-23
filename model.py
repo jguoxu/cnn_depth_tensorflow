@@ -30,6 +30,28 @@ def inference_refine(images, coarse7_output, keep_conv, reuse=False, trainable=T
     fine4 = conv2d('fine4', fine3_dropout, [5, 5, 64, 1], [1], [1, 1, 1, 1], padding='SAME', reuse=reuse, trainable=trainable)
     return fine4
 
+def inference_1(images, keep_hidden, reuse=False, trainable=True):
+    coarse1_conv = conv2d('coarse1', images, [11, 11, 3, 96], [96], [1, 4, 4, 1], padding='VALID', reuse=reuse, trainable=trainable)
+    coarse1 = tf.nn.max_pool(coarse1_conv, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='VALID', name='pool1')
+    coarse2_conv = conv2d('coarse2', coarse1, [5, 5, 96, 256], [256], [1, 1, 1, 1], padding='VALID', reuse=reuse, trainable=trainable)
+    coarse2 = tf.nn.max_pool(coarse2_conv, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', name='pool1')
+    coarse3 = conv2d('coarse3', coarse2, [3, 3, 256, 384], [384], [1, 1, 1, 1], padding='VALID', reuse=reuse, trainable=trainable)
+    coarse4 = conv2d('coarse4', coarse3, [3, 3, 384, 384], [384], [1, 1, 1, 1], padding='VALID', reuse=reuse, trainable=trainable)
+    coarse5 = conv2d('coarse5', coarse4, [3, 3, 384, 256], [256], [1, 1, 1, 1], padding='VALID', reuse=reuse, trainable=trainable)
+    coarse6 = fc('coarse6', coarse5, [6*10*256, 4096], [4096], reuse=reuse, trainable=trainable)
+    coarse6_dropout = tf.nn.dropout(coarse6, keep_hidden)
+    coarse7 = fc('coarse7', coarse6, [4096, 4070], [4070], reuse=reuse, trainable=trainable, use_relu=False)
+    coarse7_output = tf.reshape(coarse7, [-1, 55, 74, 1])
+    return coarse7_output
+
+def inference_refine_1(images, coarse7_output, reuse=False, trainable=True):
+    fine1_conv = conv2d('fine1', images, [9, 9, 3, 63], [63], [1, 2, 2, 1], padding='VALID', reuse=reuse, trainable=trainable)
+    fine1 = tf.nn.max_pool(fine1_conv, ksize=[1, 2, 2, 1], strides=[1, 2, 2, 1], padding='SAME', name='fine_pool1')
+    fine2 = tf.concat([fine1, coarse7_output], 3)
+    fine3 = conv2d('fine3', fine2, [5, 5, 64, 64], [64], [1, 1, 1, 1], padding='SAME', reuse=reuse, trainable=trainable)
+    fine4 = conv2d('fine4', fine3_dropout, [5, 5, 64, 1], [1], [1, 1, 1, 1], padding='SAME', reuse=reuse, trainable=trainable, use_relu=False)
+    return fine4
+
 
 def loss(logits, depths, invalid_depths):
     logits_flat = tf.reshape(logits, [-1, 55*74])

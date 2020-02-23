@@ -10,6 +10,8 @@ import model
 import train_operation as op
 import metrics
 
+RUN_EVAL_ON_TRAIN = True
+TRAIN_FILE = "train.csv"
 EVAL_FILE = "test.csv"
 REFINE_DIR = "refine"
 
@@ -20,14 +22,24 @@ def eval():
     with tf.Graph().as_default():
         dataset = DataSet(eval_size)
 
-        images, depths, invalid_depths = dataset.csv_inputs(EVAL_FILE)
+        images_test, depths_test, invalid_depths_test = dataset.csv_inputs(EVAL_FILE)
+        images_train, depths_train, invalid_depths_train = dataset.csv_inputs(TRAIN_FILE)
 
         # keep_conv is the drop out rate in conv layers
         keep_conv = tf.placeholder(tf.float32)
         keep_hidden = tf.placeholder(tf.float32)
 
-        coarse = model.inference(images, keep_conv, trainable=False)
-        logits = model.inference_refine(images, coarse, keep_conv, keep_hidden)
+        coarse_test = model.inference(images_test, trainable=False)
+        logits_test = model.inference_refine(images_test, coarse_test, keep_conv, trainable=False)
+        
+        metric_log_error_test = metrics.log_error(logits_test, depths_test, invalid_depths_test)
+        scale_invariant_error_test = metrics.scale_invariant_error(logits_test, depths_test, invalid_depths_test)
+        
+        coarse_train = model.inference(images_train, reuse=True, trainable=False)
+        logits_train = model.inference_refine(images_train, coarse_train, keep_conv, reuse=True, trainable=False)
+        
+        metric_log_error_train = metrics.log_error(logits_train, depths_train, invalid_depths_train)
+        scale_invariant_error_train = metrics.scale_invariant_error(logits_train, depths_train, invalid_depths_train)
 
         # initialize all variable
         init_op = tf.global_variables_initializer()
@@ -60,17 +72,27 @@ def eval():
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
-        logits_val, images_val = sess.run([logits, images], feed_dict={keep_conv: 1.0, keep_hidden: 0.5})
+        logits_val_test, images_val_test, metric_log_error_test, scale_invariant_error_test = sess.run([logits_test, images_test, metric_log_error_test, scale_invariant_error_test], feed_dict={keep_conv: 1.0, keep_hidden: 1.0})
+        
+        output_predict(logits_val_test, images_val_test, "data/predict_eval_test")
+        
+#         print("logits shape:" + str(logits_val_test.shape))
+#         print("images_val shape:" + str(images_val_test.shape))
+#         print("depths shape :" + str(depths_test.shape))
+#         print("invalid_depths shape :" + str(invalid_depths_test.shape))
 
-        print("logits shape:" + str(logits_val.shape))
-        print("images_val shape:" + str(images_val.shape))
-        print("depths shape :" + str(depths.shape))
-        print("invalid_depths shape :" + str(invalid_depths.shape))
-
-        metric_log_error_fn = metrics.log_error(logits_val, depths, invalid_depths)
-        metric_log_error = sess.run([metric_log_error_fn])
-
-        print ("metric_log_error: " + str(metric_log_error))
+        print ("Eval metrics:")
+        print ("metric_log_error: " + str(metric_log_error_test))
+        print ("scale_invariant_error: " + str(scale_invariant_error_test))
+        
+        if RUN_EVAL_ON_TRAIN:
+            logits_val_train, images_val_train, metric_log_error_train, scale_invariant_error_train = sess.run([logits_train, images_train, metric_log_error_train, scale_invariant_error_train], feed_dict={keep_conv: 1.0, keep_hidden: 1.0})
+            output_predict(logits_val_train, images_val_train, "data/predict_eval_train")
+            
+            print ("Train eval metrics:")
+            print ("metric_log_error: " + str(metric_log_error_train))
+            print ("scale_invariant_error: " + str(scale_invariant_error_train))
+        
 
         coord.request_stop()
         coord.join(threads)

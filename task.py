@@ -55,7 +55,7 @@ def train():
             # When training with coarse network, train with only coarse network.
             # (mpng) this isn't called at all
             print("coarse train.")
-            logits = model.inference(images, keep_conv, keep_hidden)
+            logits = model.inference(images, keep_conv, True)
 
         # define loss function:
         # logits: the final output after FC layer.

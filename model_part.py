@@ -54,5 +54,5 @@ def fc(scope_name, inputs, shape, bias_shape, wd=0.04, reuse=False, trainable=Tr
         if use_relu:
             fc = tf.nn.relu_layer(flat, weights, biases, name=scope.name)
         else:
-            fc = tf.keras.activations.linear(tf.matmul(weights, flat) + biases)
+            fc = tf.keras.activations.linear(tf.nn.bias_add(tf.matmul(flat, weights), biases))
         return fc

@@ -141,11 +141,11 @@ def train():
 
             # save a debug image every 1000 epoch
             # result in 10000 image
-            if i % 1000 == 0:
+            if step % 1000 == 0:
                 if REFINE_TRAIN:
-                    output_predict(logits_val, images_val, "data/predict_refine_%05d_%05d" % (step, i))
+                    output_predict(logits_val, images_val, "data/perdict/predict_refine_%05d" % step)
                 else:
-                    output_predict(logits_val, images_val, "data/predict_%05d_%05d" % (step, i))
+                    output_predict(logits_val, images_val, "data/perdict/predict_%05d" % step)
 
             # store loss every 100 epoch.
             if step % 100 == 0:

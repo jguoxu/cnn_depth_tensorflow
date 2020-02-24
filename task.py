@@ -147,12 +147,14 @@ def train():
                 else:
                     output_predict(logits_val, images_val, "data/perdict/predict_%05d" % step)
 
-            # store loss every 100 epoch.
-            if step % 100 == 0:
-                loss_curve.append(loss_value)
+            # store loss every epoch.
+            loss_curve.append(loss_value)
 
-            # save parameters every 2000 epoch.
-            if step % 2000 == 0 or (step * 1) == EPOCH:
+            # save parameters every 10 epoch.
+            if step % 10 == 0 or (step * 1) == EPOCH:
+                with open('loss.txt', 'w') as output:
+                    for l in loss_curve:
+                        output.write(str(l) + '\n')
                 if REFINE_TRAIN:
                     coarse_checkpoint_path = COARSE_DIR + '/model.ckpt'
                     saver_coarse.save(sess, coarse_checkpoint_path, global_step=step)
@@ -161,10 +163,6 @@ def train():
                 else:
                     coarse_checkpoint_path = COARSE_DIR + '/model.ckpt'
                     saver_coarse.save(sess, coarse_checkpoint_path, global_step=step)
-
-        with open('loss.txt', 'w') as output:
-            for l in loss_curve:
-                output.write(str(l) + '\n')
 
         coord.request_stop()
         coord.join(threads)

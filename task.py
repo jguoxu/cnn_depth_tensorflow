@@ -25,7 +25,7 @@ COARSE_DIR = "coarse"
 REFINE_DIR = "refine"
 
 # train with refine network if true, otherwise train with coarse network.
-REFINE_TRAIN = True
+REFINE_TRAIN = False
 
 FINE_TUNE = True
 
@@ -49,13 +49,13 @@ def train():
             # When training with refined network, train with both coarse and 
             # refined together.
             print("refine train.")
-            coarse = model.inference(images, keep_conv, trainable=True)
-            logits = model.inference_refine(images, coarse, keep_conv, keep_hidden)
+            coarse = model.inference_1(images, keep_hidden, trainable=False)
+            logits = model.inference_refine_1(images, coarse)
         else:
             # When training with coarse network, train with only coarse network.
             # (mpng) this isn't called at all
             print("coarse train.")
-            logits = model.inference(images, keep_conv, keep_hidden)
+            logits = model.inference_1(images, keep_hidden)
 
         # define loss function:
         # logits: the final output after FC layer.

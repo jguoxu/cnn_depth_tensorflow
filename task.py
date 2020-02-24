@@ -10,11 +10,14 @@ import model
 import train_operation as op
 import metrics
 
-MAX_STEPS = 10000000
-MAX_RANGE = 1000
+BATCH_SIZE = 9
+EPOCH = 10000000
+
+# total 1449 samples
+# 1449/9=161
+TOTAL_BATCH = 1449 / BATCH_SIZE 
 
 LOG_DEVICE_PLACEMENT = False
-BATCH_SIZE = 8
 TRAIN_FILE = "train.csv"
 
 # directory to store coarse and refine network model.
@@ -124,31 +127,32 @@ def train():
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
+        loss_curve = []
         # step is epoch.
-        for step in range(MAX_STEPS):
-            index = 0
-#             _, loss_value, logits_val, images_val = sess.run([train_op, loss, logits, images], feed_dict={keep_conv: 0.8, keep_hidden: 0.5})
-#             print("%s: %d[epoch]: train loss %f" % (datetime.now(), step, loss_value))
-            
-#             TODO(xuguo): is 'i' mini batches? where is the dividing of batches?
-            for i in range(MAX_RANGE):
-#                 start trainning:
-#                 loss_value - loss
-#                 logits_val - Y-hat
-#                 image_val - X
-                _, loss_value, logits_val, images_val = sess.run([train_op, loss, logits, images], feed_dict={keep_conv: 0.8, keep_hidden: 0.5})
-                if index % 10 == 0:
-                    print("%s: %d[epoch]: %d[iteration]: train loss %f" % (datetime.now(), step, index, loss_value))
-                    assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
-                if index % 500 == 0:
-                    if REFINE_TRAIN:
-                        output_predict(logits_val, images_val, "data/predict_refine_%05d_%05d" % (step, i))
-                    else:
-                        output_predict(logits_val, images_val, "data/predict_%05d_%05d" % (step, i))
-                index += 1
+        for step in range(EPOCH):
 
-            # save parameters every 5 epoch.
-            if step % 2000 == 0 or (step * 1) == MAX_STEPS:
+            for i in range(TOTAL_BATCH):
+                _, loss_value, logits_val, images_val = sess.run(
+                    [train_op, loss, logits, images], 
+                    feed_dict= {keep_conv: 0.8, keep_hidden: 0.5})
+                if i % 10 == 0:
+                    print("%s: %d[epoch]: %d[iteration]: train loss %f" % (datetime.now(), step, i, loss_value))
+                    assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
+
+            # save a debug image every 1000 epoch
+            # result in 10000 image
+            if i % 1000 == 0:
+                if REFINE_TRAIN:
+                    output_predict(logits_val, images_val, "data/predict_refine_%05d_%05d" % (step, i))
+                else:
+                    output_predict(logits_val, images_val, "data/predict_%05d_%05d" % (step, i))
+
+            # store loss every 100 epoch.
+            if step % 100 == 0:
+                loss_curve.append(loss_value)
+
+            # save parameters every 2000 epoch.
+            if step % 2000 == 0 or (step * 1) == EPOCH:
                 if REFINE_TRAIN:
                     coarse_checkpoint_path = COARSE_DIR + '/model.ckpt'
                     saver_coarse.save(sess, coarse_checkpoint_path, global_step=step)
@@ -157,6 +161,10 @@ def train():
                 else:
                     coarse_checkpoint_path = COARSE_DIR + '/model.ckpt'
                     saver_coarse.save(sess, coarse_checkpoint_path, global_step=step)
+
+        with open('loss.txt', 'w') as output:
+            for l in loss_curve:
+                output.write(str(l) + '\n')
 
         coord.request_stop()
         coord.join(threads)

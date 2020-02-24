@@ -136,19 +136,9 @@ def train():
                     [train_op, loss, logits, images], 
                     feed_dict= {keep_conv: 0.8, keep_hidden: 0.5})
                 if i % 10 == 0:
+                    loss_curve.append(loss_value)
                     print("%s: %d[epoch]: %d[iteration]: train loss %f" % (datetime.now(), step, i, loss_value))
                     assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
-
-            # save a debug image every 1000 epoch
-            # result in 10000 image
-            if step % 1000 == 0:
-                if REFINE_TRAIN:
-                    output_predict(logits_val, images_val, "data/perdict/predict_refine_%05d" % step)
-                else:
-                    output_predict(logits_val, images_val, "data/perdict/predict_%05d" % step)
-
-            # store loss every epoch.
-            loss_curve.append(loss_value)
 
             # save parameters every 10 epoch.
             if step % 10 == 0 or (step * 1) == EPOCH:
@@ -156,17 +146,19 @@ def train():
                     for l in loss_curve:
                         output.write(str(l) + '\n')
                 if REFINE_TRAIN:
-                    coarse_checkpoint_path = COARSE_DIR + '/model.ckpt'
-                    saver_coarse.save(sess, coarse_checkpoint_path, global_step=step)
+                    output_predict(logits_val, images_val, "data/perdict/predict_refine_%05d" % step)
+                    # coarse_checkpoint_path = COARSE_DIR + '/model.ckpt'
+                    # saver_coarse.save(sess, coarse_checkpoint_path, global_step=step)
+
+                    print ("saving refine network checkpoint")
                     refine_checkpoint_path = REFINE_DIR + '/model.ckpt'
                     saver_refine.save(sess, refine_checkpoint_path, global_step=step)
                 else:
+                    output_predict(logits_val, images_val, "data/perdict/predict_%05d" % step)
+
+                    print ("saving coarse network checkpoint")
                     coarse_checkpoint_path = COARSE_DIR + '/model.ckpt'
                     saver_coarse.save(sess, coarse_checkpoint_path, global_step=step)
-
-        with open('loss.txt', 'w') as output:
-            for l in loss_curve:
-                output.write(str(l) + '\n')
 
         coord.request_stop()
         coord.join(threads)

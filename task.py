@@ -25,7 +25,7 @@ COARSE_DIR = "coarse"
 REFINE_DIR = "refine"
 
 # train with refine network if true, otherwise train with coarse network.
-REFINE_TRAIN = True
+REFINE_TRAIN = False
 
 FINE_TUNE = True
 
@@ -49,7 +49,7 @@ def train():
             # When training with refined network, train with both coarse and 
             # refined together.
             print("refine train.")
-            coarse = model.inference(images, keep_conv, trainable=True)
+            coarse = model.inference(images, keep_conv, trainable=False)
             logits = model.inference_refine(images, coarse, keep_conv, keep_hidden)
         else:
             # When training with coarse network, train with only coarse network.

@@ -7,10 +7,13 @@ https://arxiv.org/abs/1406.2283
 ![network](images/network.png)
 
 # requierments
-- TensorFlow 0.10+
+- TensorFlow 0.10+ or TensorFlow GPU
 ```
-pip install tensorflow==1.0.0
+pip install tensorflow==1.0.0 
+# or
+pip install tensorflow-gpu==1.15
 ```
+
 - Numpy
 ```
 pip install numpy
